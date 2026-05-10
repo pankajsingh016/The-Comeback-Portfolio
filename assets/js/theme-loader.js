@@ -1,6 +1,8 @@
 /**
  * Loads data/theme.json and applies copy + design tokens to the page.
- * Serve the repo root over HTTP (e.g. python -m http.server) so fetch('data/theme.json') works.
+ * Brand marquee logos come from data/brand-icons-manifest.json — regenerate with:
+ *   node scripts/sync-brand-icons.mjs
+ * Serve the repo root over HTTP (e.g. python -m http.server) so fetch paths work.
  */
 (function () {
   'use strict';
@@ -356,8 +358,13 @@
   function applyDashboardProof(card, dp) {
     const wrap = card.querySelector('.feat-proof');
     if (!wrap) return;
-    const hasVideo = dp && dp.videoUrl != null && String(dp.videoUrl).trim() !== '';
-    if (!hasVideo) {
+    if (!dp || typeof dp !== 'object') {
+      wrap.setAttribute('hidden', '');
+      return;
+    }
+    const hasSpreadsheet =
+      dp.dataSpreadsheetUrl != null && String(dp.dataSpreadsheetUrl).trim() !== '';
+    if (!hasSpreadsheet) {
       wrap.setAttribute('hidden', '');
       return;
     }
@@ -377,34 +384,13 @@
       }
       const hintEl = dataA.querySelector('.feat-proof-data__hint');
       if (hintEl && dp.dataSpreadsheetHint != null) hintEl.textContent = dp.dataSpreadsheetHint;
-      const tagEl = dataA.querySelector('.feat-proof-data__tag');
-      if (tagEl) {
-        if (dp.dataSpreadsheetTag != null && String(dp.dataSpreadsheetTag).trim() !== '') {
-          tagEl.textContent = dp.dataSpreadsheetTag;
-          tagEl.removeAttribute('hidden');
-        } else {
-          tagEl.setAttribute('hidden', '');
-        }
-      }
       const ctaLbl = dataA.querySelector('.feat-proof-data__cta-text');
       if (ctaLbl && dp.dataSpreadsheetCtaLabel != null) ctaLbl.textContent = dp.dataSpreadsheetCtaLabel;
       const a11y = [dp.dataSpreadsheetLabel, dp.dataSpreadsheetHint].filter(Boolean).join('. ');
       if (a11y) dataA.setAttribute('aria-label', a11y);
     }
-    const eyebrow = wrap.querySelector('.feat-proof-eyebrow');
-    const title = wrap.querySelector('.feat-proof-title');
-    const urlBar = wrap.querySelector('.feat-proof-url');
-    if (eyebrow && dp.eyebrow != null) eyebrow.textContent = dp.eyebrow;
-    if (title && dp.title != null) title.textContent = dp.title;
-    const barText =
-      dp.videoUrlBar != null && String(dp.videoUrlBar).trim() !== ''
-        ? String(dp.videoUrlBar)
-        : dp.urlBar != null
-          ? String(dp.urlBar)
-          : '';
-    if (urlBar && barText) urlBar.textContent = barText;
     const vid = wrap.querySelector('.feat-proof-video');
-    if (vid) {
+    if (vid && dp.videoUrl != null && String(dp.videoUrl).trim() !== '') {
       vid.src = String(dp.videoUrl);
       if (dp.videoTitle != null) vid.setAttribute('title', String(dp.videoTitle));
     }
@@ -485,7 +471,17 @@
       const icon = card.querySelector('.bring-icon-wrap');
       const title = card.querySelector('.bring-title');
       const desc = card.querySelector('.bring-desc');
-      if (icon && c.icon != null) icon.textContent = c.icon;
+      if (icon) {
+        if (c.iconUrl != null && String(c.iconUrl).trim() !== '') {
+          const src = escapeHtml(String(c.iconUrl).trim());
+          icon.innerHTML =
+            '<img class="bring-icon-img" src="' +
+            src +
+            '" alt="" width="44" height="44" loading="lazy" decoding="async" />';
+        } else if (c.icon != null) {
+          icon.textContent = c.icon;
+        }
+      }
       if (title && c.title != null) title.textContent = c.title;
       if (desc && c.description != null) desc.textContent = c.description;
     });
@@ -499,23 +495,16 @@
     if (!words || !scale) return;
     const arrow =
       '<span class="process-pipeline__sep" aria-hidden="true"><svg class="process-pipeline__arrow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m10 6 6 6-6 6" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
-    const track1 = document.querySelector('.process-pipeline__track:not(.process-pipeline__track--scale)');
-    const track2 = document.querySelector('.process-pipeline__track--scale');
-    if (track1) {
-      const parts = [];
-      words.forEach((w, i) => {
-        parts.push('<span class="process-pipeline__word">' + escapeHtml(w) + '</span>');
-        if (i < words.length - 1) parts.push(arrow);
-      });
-      track1.innerHTML = parts.join('');
-    }
-    if (track2) {
-      track2.innerHTML =
-        arrow +
-        '<em>' +
-        escapeHtml(scale) +
-        '</em>';
-    }
+    const flow = document.querySelector('.process-pipeline__flow');
+    if (!flow) return;
+    const parts = [];
+    words.forEach((w, i) => {
+      parts.push('<span class="process-pipeline__word">' + escapeHtml(w) + '</span>');
+      if (i < words.length - 1) parts.push(arrow);
+    });
+    parts.push(arrow);
+    parts.push('<em class="process-pipeline__scale">' + escapeHtml(scale) + '</em>');
+    flow.innerHTML = parts.join('');
   }
 
   function applyProcessSteps(t) {
@@ -649,6 +638,52 @@
     return 'data/theme.json';
   }
 
+  function brandIconsManifestUrl() {
+    if (
+      typeof window.__BRAND_ICONS_MANIFEST_PATH__ === 'string' &&
+      window.__BRAND_ICONS_MANIFEST_PATH__.length
+    ) {
+      return window.__BRAND_ICONS_MANIFEST_PATH__;
+    }
+    const page = document.documentElement.getAttribute('data-page');
+    if (page === 'excel-data') {
+      return '../data/brand-icons-manifest.json';
+    }
+    return 'data/brand-icons-manifest.json';
+  }
+
+  /** Builds marquee lists from data/brand-icons-manifest.json (sync script output). */
+  function injectBrandRibbon(manifest) {
+    const track = document.querySelector('.brand-ribbon__track');
+    if (!track) return;
+    const icons =
+      manifest &&
+      Array.isArray(manifest.icons) &&
+      manifest.icons.length
+        ? manifest.icons
+        : null;
+    if (!icons) return;
+    const items = icons
+      .map(function (src) {
+        const s = String(src).trim();
+        if (!s.length) return '';
+        return (
+          '<li><img src="' +
+          escapeHtml(s) +
+          '" alt="" width="160" height="64" loading="lazy" decoding="async"></li>'
+        );
+      })
+      .filter(Boolean)
+      .join('');
+    if (!items.length) return;
+    track.innerHTML =
+      '<ul class="brand-ribbon__list" role="list">' +
+      items +
+      '</ul><ul class="brand-ribbon__list" role="presentation" aria-hidden="true">' +
+      items +
+      '</ul>';
+  }
+
   function applyPortfolioSubpageNav(t) {
     const nav = t.navigation;
     if (!nav || !nav.items) return;
@@ -712,7 +747,7 @@
       });
   }
 
-  function applyTheme(theme) {
+  function applyTheme(theme, brandManifest) {
     applyDesign(theme);
     const page = document.documentElement.getAttribute('data-page');
     if (page === 'excel-data') {
@@ -734,6 +769,7 @@
     applyBring(theme);
     applyProcessPipeline(theme);
     applyProcessSteps(theme);
+    injectBrandRibbon(brandManifest);
     applyCtaContact(theme);
     applyContactLabels(theme);
     applyFooter(theme);
@@ -746,12 +782,24 @@
   }
 
   function init() {
-    fetch(themeJsonUrl(), { cache: 'no-store' })
-      .then((r) => {
-        if (!r.ok) throw new Error(themeJsonUrl() + ' HTTP ' + r.status);
+    const themeUrl = themeJsonUrl();
+    const manifestUrl = brandIconsManifestUrl();
+    Promise.all([
+      fetch(themeUrl, { cache: 'no-store' }).then((r) => {
+        if (!r.ok) throw new Error(themeUrl + ' HTTP ' + r.status);
         return r.json();
+      }),
+      fetch(manifestUrl, { cache: 'no-store' })
+        .then(function (r) {
+          return r.ok ? r.json() : null;
+        })
+        .catch(function () {
+          return null;
+        }),
+    ])
+      .then(function (pair) {
+        applyTheme(pair[0], pair[1]);
       })
-      .then(applyTheme)
       .catch((e) => {
         showThemeError(
           e.message +

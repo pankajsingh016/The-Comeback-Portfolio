@@ -77,7 +77,7 @@
     "heroDesc": "I design and run full-funnel growth systems—Meta, Google, SEO, CRO, analytics, and retention—so CAC drops, LTV rises, and revenue compounds. Predictable pipelines, not one-off campaign spikes.",
     "photoBadge": {
       "name": "Sachin Prajapati",
-      "role": "Growth Head · My Pixel Panda · QuickFlo",
+      "role": "Founder Realm Syndicate",
       "pills": [
         "MBA — Marketing & Finance",
         "IET Lucknow",
@@ -141,7 +141,7 @@
         "label": "Years experience"
       },
       {
-        "value": "30+",
+        "value": "50+",
         "label": "Brands scaled"
       },
       {
@@ -249,15 +249,9 @@
     "caseStudyUrl": "pages/case-study-40l-to-131cr.html",
     "caseStudyLinkLabel": "Read full case study",
     "dashboardProof": {
-      "videoUrl": "assets/media/video/video.mp4",
-      "videoUrlBar": "proof · walkthrough.mp4",
-      "eyebrow": "Behind the numbers",
-      "title": "Shopify analytics — walkthrough",
-      "urlBar": "proof · walkthrough.mp4",
       "dataSpreadsheetUrl": "pages/excel_data.html",
       "dataSpreadsheetLabel": "Strategy breakdown",
       "dataSpreadsheetHint": "Interactive funnel model · opens in new tab",
-      "dataSpreadsheetTag": "Playbook",
       "dataSpreadsheetCtaLabel": "Explore"
     },
     "blocks": [
@@ -510,7 +504,7 @@
     },
     "cards": [
       {
-        "icon": "🎯",
+        "iconUrl": "assets/media/icons/FULL_FUNNEL.webp",
         "title": "Full-funnel ownership",
         "description": "From awareness to conversion to LTV—I own the revenue path, not a single channel tab."
       },
