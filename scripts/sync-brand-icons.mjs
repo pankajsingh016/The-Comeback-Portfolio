@@ -15,12 +15,13 @@ const BRAND_DIR = path.join(ROOT, 'assets', 'media', 'brand icons');
 const OUT = path.join(ROOT, 'data', 'brand-icons-manifest.json');
 const IMAGE_EXT = /\.(png|jpe?g|webp|gif|svg)$/i;
 
+/** Web path from repo root; forward slashes only (no encoding — matches static img src usage). */
 function pathToUrlFromRoot(absPath) {
-  const rel = path.relative(ROOT, absPath);
-  return rel
-    .split(path.sep)
-    .map((seg) => encodeURIComponent(seg))
-    .join('/');
+  let rel = path.relative(ROOT, absPath);
+  if (path.sep !== '/') {
+    rel = rel.split(path.sep).join('/');
+  }
+  return rel;
 }
 
 function main() {
